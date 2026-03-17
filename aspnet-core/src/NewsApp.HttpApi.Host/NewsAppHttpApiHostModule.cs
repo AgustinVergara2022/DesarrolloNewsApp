@@ -69,6 +69,7 @@ public class NewsAppHttpApiHostModule : AbpModule
         ConfigureVirtualFileSystem(context);
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
+        ConfigureHttpClients(context, configuration);
     }
 
     private void ConfigureAuthentication(ServiceConfigurationContext context)
@@ -167,6 +168,22 @@ public class NewsAppHttpApiHostModule : AbpModule
                     .AllowAnyMethod()
                     .AllowCredentials();
             });
+        });
+    }
+
+    private void ConfigureHttpClients(ServiceConfigurationContext context, IConfiguration configuration)
+    {
+        // Registra un HttpClient nombrado para la API externa de noticias
+        context.Services.AddHttpClient("NewsApi", client =>
+        {
+            client.BaseAddress = new Uri(configuration["ExternalNewsApi:BaseUrl"] ?? "https://newsapi.org/v2/");
+            // NewsAPI soporta X-Api-Key header
+            var apiKey = configuration["ExternalNewsApi:ApiKey"];
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+            }
+            client.DefaultRequestHeaders.Add("User-Agent", "NewsApp-Client");
         });
     }
 

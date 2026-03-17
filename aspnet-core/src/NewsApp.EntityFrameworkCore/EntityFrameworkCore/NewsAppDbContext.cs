@@ -1,5 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+using System;
+using Microsoft.EntityFrameworkCore;
+using NewsApp.News;
 using NewsApp.Themes;
+using NewsApp.ReadingLists;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
 using Volo.Abp.Data;
@@ -17,10 +20,7 @@ using Volo.Abp.TenantManagement.EntityFrameworkCore;
 
 namespace NewsApp.EntityFrameworkCore;
 
-[ReplaceDbContext(typeof(IIdentityDbContext))]
-[ReplaceDbContext(typeof(ITenantManagementDbContext))]
-[ConnectionStringName("Default")]
-public class NewsAppDbContext :
+public partial class NewsAppDbContext :
     AbpDbContext<NewsAppDbContext>,
     IIdentityDbContext,
     ITenantManagementDbContext
@@ -28,17 +28,6 @@ public class NewsAppDbContext :
     /* Add DbSet properties for your Aggregate Roots / Entities here. */
 
     #region Entities from the modules
-
-    /* Notice: We only implemented IIdentityDbContext and ITenantManagementDbContext
-     * and replaced them for this DbContext. This allows you to perform JOIN
-     * queries for the entities of these modules over the repositories easily. You
-     * typically don't need that for other modules. But, if you need, you can
-     * implement the DbContext interface of the needed module and use ReplaceDbContext
-     * attribute just like IIdentityDbContext and ITenantManagementDbContext.
-     *
-     * More info: Replacing a DbContext of a module ensures that the related module
-     * uses this DbContext on runtime. Otherwise, it will use its own DbContext class.
-     */
 
     //Identity
     public DbSet<IdentityUser> Users { get; set; }
@@ -59,6 +48,12 @@ public class NewsAppDbContext :
 
     public DbSet<Theme> Themes { get; set; }
 
+    // Nueva entidad News
+    public DbSet<NewsApp.News.News> News { get; set; }
+
+    // Reading lists
+    public DbSet<ReadingList> ReadingLists { get; set; }
+    public DbSet<ReadingListItem> ReadingListItems { get; set; }
 
     #endregion
 
@@ -85,14 +80,6 @@ public class NewsAppDbContext :
 
         /* Configure your own tables/entities inside here */
 
-        //builder.Entity<YourEntity>(b =>
-        //{
-        //    b.ToTable(NewsAppConsts.DbTablePrefix + "YourEntities", NewsAppConsts.DbSchema);
-        //    b.ConfigureByConvention(); //auto configure for the base class props
-        //    //...
-        //});
-
-
         //Entidad Theme
         builder.Entity<Theme>(b =>
         {
@@ -101,8 +88,33 @@ public class NewsAppDbContext :
            b.Property(x => x.Name).IsRequired().HasMaxLength(128);
         });
 
+        // Entidad News: tabla AppNews
+        builder.Entity<NewsApp.News.News>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "News", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.Title).IsRequired().HasMaxLength(256);
+            b.Property(x => x.Content).IsRequired();
+            b.Property(x => x.Author).HasMaxLength(128);
+            b.Property(x => x.PublishedAt);
+        });
 
+        // ReadingList
+        builder.Entity<ReadingList>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "ReadingLists", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.Name).IsRequired().HasMaxLength(256);
+            b.Property(x => x.OwnerUserId).IsRequired();
+            b.HasMany(x => x.Items).WithOne().HasForeignKey(x => x.ReadingListId).IsRequired();
+        });
 
-
+        builder.Entity<ReadingListItem>(b =>
+        {
+            b.ToTable(NewsAppConsts.DbTablePrefix + "ReadingListItems", NewsAppConsts.DbSchema);
+            b.ConfigureByConvention();
+            b.Property(x => x.NewsId).IsRequired();
+            b.Property(x => x.Order).IsRequired();
+        });
     }
 }

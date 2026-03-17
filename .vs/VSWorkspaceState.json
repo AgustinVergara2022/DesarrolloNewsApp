@@ -1,6 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\aspnet-core"
   ],
+  "SelectedNode": "\\aspnet-core\\NewsApp.sln",
   "PreviewInSolutionExplorer": false
 }

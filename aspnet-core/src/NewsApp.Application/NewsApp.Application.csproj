@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <Import Project="..\..\common.props" />
 
@@ -11,9 +11,14 @@
   <ItemGroup>
     <ProjectReference Include="..\NewsApp.Domain\NewsApp.Domain.csproj" />
     <ProjectReference Include="..\NewsApp.Application.Contracts\NewsApp.Application.Contracts.csproj" />
+    <ProjectReference Include="..\NewsApp.EntityFrameworkCore\NewsApp.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Abp.EntityFrameworkCore" Version="7.3.0" />
+    <PackageReference Include="Google.Api.CommonProtos" Version="2.17.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.20" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
     <PackageReference Include="Volo.Abp.Account.Application" Version="7.3.3" />
     <PackageReference Include="Volo.Abp.Identity.Application" Version="7.3.3" />
     <PackageReference Include="Volo.Abp.PermissionManagement.Application" Version="7.3.3" />
