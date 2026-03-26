@@ -1,12 +1,8 @@
-using System;
 using Microsoft.EntityFrameworkCore;
-using NewsApp.News;
 using NewsApp.Themes;
 using NewsApp.ReadingLists;
 using Volo.Abp.AuditLogging.EntityFrameworkCore;
 using Volo.Abp.BackgroundJobs.EntityFrameworkCore;
-using Volo.Abp.Data;
-using Volo.Abp.DependencyInjection;
 using Volo.Abp.EntityFrameworkCore;
 using Volo.Abp.EntityFrameworkCore.Modeling;
 using Volo.Abp.FeatureManagement.EntityFrameworkCore;
@@ -37,6 +33,7 @@ public partial class NewsAppDbContext :
     public DbSet<IdentitySecurityLog> SecurityLogs { get; set; }
     public DbSet<IdentityLinkUser> LinkUsers { get; set; }
     public DbSet<IdentityUserDelegation> UserDelegations { get; set; }
+    public DbSet<NewsApp.Alerts.Alert> Alerts { get; set; }
 
     // Tenant Management
     public DbSet<Tenant> Tenants { get; set; }
@@ -115,6 +112,15 @@ public partial class NewsAppDbContext :
             b.ConfigureByConvention();
             b.Property(x => x.NewsId).IsRequired();
             b.Property(x => x.Order).IsRequired();
+        });
+
+        builder.Entity<NewsApp.Alerts.Alert>(b =>
+        {
+            b.ToTable("AppAlerts");
+            b.ConfigureByConvention();
+            b.Property(x => x.Keyword).IsRequired().HasMaxLength(256);
+            b.Property(x => x.UserEmail).IsRequired().HasMaxLength(256);
+            b.Property(x => x.LastSeenPublishedAt);
         });
     }
 }

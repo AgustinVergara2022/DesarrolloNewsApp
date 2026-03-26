@@ -1,28 +1,32 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using NewsApp.EntityFrameworkCore;
-using NewsApp.MultiTenancy;
-using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite;
-using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite.Bundling;
 using Microsoft.OpenApi.Models;
+using NewsApp.EntityFrameworkCore;
+using NewsApp.EntityFrameworkCore.BackgroundWorkers;
+using NewsApp.EntityFrameworkCore.Services;
+using NewsApp.MultiTenancy;
 using OpenIddict.Validation.AspNetCore;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Volo.Abp;
 using Volo.Abp.Account;
 using Volo.Abp.Account.Web;
 using Volo.Abp.AspNetCore.MultiTenancy;
 using Volo.Abp.AspNetCore.Mvc;
 using Volo.Abp.AspNetCore.Mvc.UI.Bundling;
+using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite;
+using Volo.Abp.AspNetCore.Mvc.UI.Theme.LeptonXLite.Bundling;
 using Volo.Abp.AspNetCore.Mvc.UI.Theme.Shared;
 using Volo.Abp.AspNetCore.Serilog;
 using Volo.Abp.Autofac;
+using Volo.Abp.BackgroundWorkers;
 using Volo.Abp.Localization;
 using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
@@ -70,6 +74,9 @@ public class NewsAppHttpApiHostModule : AbpModule
         ConfigureCors(context, configuration);
         ConfigureSwaggerServices(context, configuration);
         ConfigureHttpClients(context, configuration);
+
+        
+        context.Services.AddHttpClient<INewsApiClient, NewsApiClient>();
     }
 
     private void ConfigureAuthentication(ServiceConfigurationContext context)
@@ -141,7 +148,7 @@ public class NewsAppHttpApiHostModule : AbpModule
             configuration["AuthServer:Authority"],
             new Dictionary<string, string>
             {
-                    {"NewsApp", "NewsApp API"}
+                {"NewsApp", "NewsApp API"}
             },
             options =>
             {
@@ -173,11 +180,9 @@ public class NewsAppHttpApiHostModule : AbpModule
 
     private void ConfigureHttpClients(ServiceConfigurationContext context, IConfiguration configuration)
     {
-        // Registra un HttpClient nombrado para la API externa de noticias
         context.Services.AddHttpClient("NewsApi", client =>
         {
             client.BaseAddress = new Uri(configuration["ExternalNewsApi:BaseUrl"] ?? "https://newsapi.org/v2/");
-            // NewsAPI soporta X-Api-Key header
             var apiKey = configuration["ExternalNewsApi:ApiKey"];
             if (!string.IsNullOrWhiteSpace(apiKey))
             {
@@ -187,27 +192,35 @@ public class NewsAppHttpApiHostModule : AbpModule
         });
     }
 
-    public override void OnApplicationInitialization(ApplicationInitializationContext context)
+    
+    public override async Task OnApplicationInitializationAsync(
+        ApplicationInitializationContext context)
     {
+        
+        await context.AddBackgroundWorkerAsync<AlertNewsBackgroundWorker>();
+
         var app = context.GetApplicationBuilder();
         var env = context.GetEnvironment();
+        var configuration = context.ServiceProvider.GetRequiredService<IConfiguration>();
 
         if (env.IsDevelopment())
         {
             app.UseDeveloperExceptionPage();
         }
-
-        app.UseAbpRequestLocalization();
-
-        if (!env.IsDevelopment())
+        else
         {
             app.UseErrorPage();
         }
 
+        app.UseAbpRequestLocalization();
+
         app.UseCorrelationId();
         app.UseStaticFiles();
+
         app.UseRouting();
+
         app.UseCors();
+
         app.UseAuthentication();
         app.UseAbpOpenIddictValidation();
 
@@ -223,14 +236,13 @@ public class NewsAppHttpApiHostModule : AbpModule
         app.UseAbpSwaggerUI(c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "NewsApp API");
-
-            var configuration = context.ServiceProvider.GetRequiredService<IConfiguration>();
             c.OAuthClientId(configuration["AuthServer:SwaggerClientId"]);
             c.OAuthScopes("NewsApp");
         });
 
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
+
         app.UseConfiguredEndpoints();
     }
 }
