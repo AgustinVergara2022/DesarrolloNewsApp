@@ -42,6 +42,7 @@ public class Program
         {
             if (ex is HostAbortedException)
             {
+                Console.WriteLine(ex.ToString());
                 throw;
             }
 

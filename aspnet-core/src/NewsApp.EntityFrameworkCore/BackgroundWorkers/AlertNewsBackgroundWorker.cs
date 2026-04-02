@@ -13,6 +13,7 @@ using NewsApp.EntityFrameworkCore.Services;
 
 namespace NewsApp.EntityFrameworkCore.BackgroundWorkers
 {
+
     public class AlertNewsBackgroundWorker : AsyncPeriodicBackgroundWorkerBase
     {
         private readonly ILogger<AlertNewsBackgroundWorker> _logger;
@@ -34,11 +35,13 @@ namespace NewsApp.EntityFrameworkCore.BackgroundWorkers
             _newsApi = newsApi;
             _emailSender = emailSender;
 
-            Timer.Period = 5 * 60 * 1000; // 5 minutos
+            Timer.Period = 30 * 1000; // 30 segundos
         }
 
         protected override async Task DoWorkAsync(PeriodicBackgroundWorkerContext workerContext)
         {
+            _logger.LogInformation("Worker ejecutándose...");
+
             try
             {
                 var alerts = await _alertsRepo.GetListAsync();
@@ -56,6 +59,8 @@ namespace NewsApp.EntityFrameworkCore.BackgroundWorkers
                         .OrderBy(a => a.PublishedAt)
                         .ToList();
 
+                    _logger.LogInformation($"Noticias encontradas: {newArticles.Count}");
+
                     if (newArticles.Any())
                     {
                         var sb = new StringBuilder();
@@ -69,7 +74,9 @@ namespace NewsApp.EntityFrameworkCore.BackgroundWorkers
                             sb.AppendLine();
                         }
 
-                        await _emailSender.SendAsync(
+                        var smtp = new SmtpTestSender();
+
+                        await smtp.SendAsync(
                             alert.UserEmail,
                             $"Noticias sobre {alert.Keyword}",
                             sb.ToString()
@@ -88,4 +95,5 @@ namespace NewsApp.EntityFrameworkCore.BackgroundWorkers
             }
         }
     }
+
 }

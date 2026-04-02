@@ -32,6 +32,8 @@ using Volo.Abp.Modularity;
 using Volo.Abp.Swashbuckle;
 using Volo.Abp.UI.Navigation.Urls;
 using Volo.Abp.VirtualFileSystem;
+using Volo.Abp.MailKit;
+using Volo.Abp.Emailing;
 
 namespace NewsApp;
 
@@ -44,7 +46,8 @@ namespace NewsApp;
     typeof(AbpAspNetCoreMvcUiLeptonXLiteThemeModule),
     typeof(AbpAccountWebOpenIddictModule),
     typeof(AbpAspNetCoreSerilogModule),
-    typeof(AbpSwashbuckleModule)
+    typeof(AbpSwashbuckleModule),
+    typeof(AbpMailKitModule)
 )]
 public class NewsAppHttpApiHostModule : AbpModule
 {
@@ -75,8 +78,10 @@ public class NewsAppHttpApiHostModule : AbpModule
         ConfigureSwaggerServices(context, configuration);
         ConfigureHttpClients(context, configuration);
 
-        
-        context.Services.AddHttpClient<INewsApiClient, NewsApiClient>();
+
+        context.Services.AddScoped<INewsApiClient, NewsApiClient>();
+
+
     }
 
     private void ConfigureAuthentication(ServiceConfigurationContext context)
@@ -192,11 +197,9 @@ public class NewsAppHttpApiHostModule : AbpModule
         });
     }
 
-    
     public override async Task OnApplicationInitializationAsync(
         ApplicationInitializationContext context)
     {
-        
         await context.AddBackgroundWorkerAsync<AlertNewsBackgroundWorker>();
 
         var app = context.GetApplicationBuilder();
@@ -213,14 +216,10 @@ public class NewsAppHttpApiHostModule : AbpModule
         }
 
         app.UseAbpRequestLocalization();
-
         app.UseCorrelationId();
         app.UseStaticFiles();
-
         app.UseRouting();
-
         app.UseCors();
-
         app.UseAuthentication();
         app.UseAbpOpenIddictValidation();
 
@@ -242,7 +241,6 @@ public class NewsAppHttpApiHostModule : AbpModule
 
         app.UseAuditing();
         app.UseAbpSerilogEnrichers();
-
         app.UseConfiguredEndpoints();
     }
 }

@@ -22,6 +22,7 @@
   <ItemGroup>
     <PackageReference Include="Volo.Abp.Http.Client.IdentityModel" Version="7.3.3" />
     <PackageReference Include="Volo.Abp.Autofac" Version="7.3.3" />
+    <PackageReference Include="Volo.Abp.MailKit" Version="7.3.3" />
     <ProjectReference Include="..\..\src\NewsApp.HttpApi.Client\NewsApp.HttpApi.Client.csproj" />
   </ItemGroup>
 

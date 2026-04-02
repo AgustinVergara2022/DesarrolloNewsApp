@@ -12,19 +12,29 @@ namespace NewsApp.EntityFrameworkCore.Services
         private readonly HttpClient _http;
         private readonly string _apiKey;
 
-        public NewsApiClient(HttpClient http, IConfiguration configuration)
+        public NewsApiClient(IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
-            _http = http;
-            _apiKey = configuration["ExternalNewsApi:ApiKey"]
-            ?? throw new ArgumentNullException("ExternalNewsApi:ApiKey");
+            _http = httpClientFactory.CreateClient("NewsApi");
+            _apiKey = configuration["ExternalNewsApi:ApiKey"];
         }
 
         public async Task<IList<NewsArticle>> GetArticlesAsync(string query, DateTime? from = null)
         {
-            var url = $"https://newsapi.org/v2/everything?q={Uri.EscapeDataString(query)}&apiKey={_apiKey}&pageSize=50&sortBy=publishedAt";
-            if (from.HasValue) url += $"&from={from.Value.ToString("o")}";
+            // IMPORTANTE: NO incluir apiKey en la URL
+            var url = $"everything?q={Uri.EscapeDataString(query)}&pageSize=50&sortBy=publishedAt";
+
+            if (from.HasValue)
+            {
+                url += $"&from={from.Value:yyyy-MM-dd}";
+            }
+
+            // DEBUG (opcional, pero muy útil)
+            Console.WriteLine("URL NewsAPI: " + url);
+
             var resp = await _http.GetFromJsonAsync<NewsApiResponse>(url);
+
             var list = new List<NewsArticle>();
+
             if (resp?.Articles != null)
             {
                 foreach (var a in resp.Articles)
@@ -32,6 +42,7 @@ namespace NewsApp.EntityFrameworkCore.Services
                     list.Add(new NewsArticle(a.Title, a.Description, a.Url, a.PublishedAt));
                 }
             }
+
             return list;
         }
 
